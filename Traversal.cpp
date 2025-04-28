@@ -6,8 +6,8 @@
 
 using namespace std;
 
-// ===== DFS FUNCTION =====
-void DFS(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
+// ===== TRADITIONAL DFS =====
+void DFS_Traditional(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
     stack<int> s;
     s.push(start);
 
@@ -19,7 +19,29 @@ void DFS(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
             cout << node << " ";
             visited[node] = true;
 
-            // Push neighbors (can be parallel if needed)
+            for (int i = adjList[node].size() - 1; i >= 0; --i) {
+                int neighbor = adjList[node][i];
+                if (!visited[neighbor]) {
+                    s.push(neighbor);
+                }
+            }
+        }
+    }
+}
+
+// ===== OMP DFS =====
+void DFS_OMP(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
+    stack<int> s;
+    s.push(start);
+
+    while (!s.empty()) {
+        int node = s.top();
+        s.pop();
+
+        if (!visited[node]) {
+            cout << node << " ";
+            visited[node] = true;
+
             #pragma omp parallel for
             for (int i = adjList[node].size() - 1; i >= 0; --i) {
                 int neighbor = adjList[node][i];
@@ -32,8 +54,8 @@ void DFS(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
     }
 }
 
-// ===== BFS FUNCTION =====
-void BFS(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
+// ===== TRADITIONAL BFS =====
+void BFS_Traditional(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
     queue<int> q;
     q.push(start);
     visited[start] = true;
@@ -43,7 +65,27 @@ void BFS(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
         q.pop();
         cout << node << " ";
 
-        // Enqueue neighbors
+        for (int i = 0; i < adjList[node].size(); ++i) {
+            int neighbor = adjList[node][i];
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                q.push(neighbor);
+            }
+        }
+    }
+}
+
+// ===== OMP BFS =====
+void BFS_OMP(int start, vector<vector<int>>& adjList, vector<bool>& visited) {
+    queue<int> q;
+    q.push(start);
+    visited[start] = true;
+
+    while (!q.empty()) {
+        int node = q.front();
+        q.pop();
+        cout << node << " ";
+
         #pragma omp parallel for
         for (int i = 0; i < adjList[node].size(); ++i) {
             int neighbor = adjList[node][i];
@@ -75,7 +117,7 @@ int main() {
         int u, v;
         cin >> u >> v;
         adjList[u].push_back(v);
-        adjList[v].push_back(u);  // For undirected graph
+        adjList[v].push_back(u); // undirected graph
     }
 
     int start;
@@ -89,17 +131,44 @@ int main() {
     int choice;
     cin >> choice;
 
+    double startTime, endTime;
     vector<bool> visited(vertices, false);
 
     switch (choice) {
         case 1:
-            cout << "\nDFS traversal:\n";
-            DFS(start, adjList, visited);
+            cout << "\n=== Traditional DFS traversal ===\n";
+            startTime = omp_get_wtime();
+            DFS_Traditional(start, adjList, visited);
+            endTime = omp_get_wtime();
+            cout << "\nExecution Time (Traditional DFS): " << (endTime - startTime) << " seconds\n";
+
+            // Reset visited
+            fill(visited.begin(), visited.end(), false);
+
+            cout << "\n=== OMP Parallel DFS traversal ===\n";
+            startTime = omp_get_wtime();
+            DFS_OMP(start, adjList, visited);
+            endTime = omp_get_wtime();
+            cout << "\nExecution Time (OMP DFS): " << (endTime - startTime) << " seconds\n";
+
             break;
 
         case 2:
-            cout << "\nBFS traversal:\n";
-            BFS(start, adjList, visited);
+            cout << "\n=== Traditional BFS traversal ===\n";
+            startTime = omp_get_wtime();
+            BFS_Traditional(start, adjList, visited);
+            endTime = omp_get_wtime();
+            cout << "\nExecution Time (Traditional BFS): " << (endTime - startTime) << " seconds\n";
+
+            // Reset visited
+            fill(visited.begin(), visited.end(), false);
+
+            cout << "\n=== OMP Parallel BFS traversal ===\n";
+            startTime = omp_get_wtime();
+            BFS_OMP(start, adjList, visited);
+            endTime = omp_get_wtime();
+            cout << "\nExecution Time (OMP BFS): " << (endTime - startTime) << " seconds\n";
+
             break;
 
         default:
